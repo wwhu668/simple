@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Services\Payment\PaymentEnum;
 use App\Services\PaymentService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
@@ -40,9 +39,24 @@ class UsersController extends Controller
 
     public function show(User $user)
     {
-        $this->userService->show('admin');
-        $this->paymentService->setPayment(PaymentEnum::AliPay);
-        $this->paymentService->checkout(1000);
-//        return view('users.show', compact('user'));
+        return view('users.show', compact('user'));
+    }
+
+    public function store(Request $request)
+    {
+        $this->validate($request, [
+            'name' => 'required|max:50',
+            'email' => 'required|email|unique:users|max:255',
+            'password' => 'required'
+        ]);
+
+        $user = User::create([
+            'name' => $request->get('name'),
+            'email' => $request->get('email'),
+            'password' => bcrypt($request->get('password')),
+        ]);
+
+        session()->flash('success', '欢迎，您将在这里开启一段新的旅程~');
+        return redirect()->route('users.show', [$user]);
     }
 }
