@@ -28,7 +28,7 @@ class UsersController extends Controller
     public function __construct(UserService $userService, PaymentService $paymentService)
     {
         $this->middleware('auth', [
-            'except' => ['show', 'create', 'store', 'index'],
+            'except' => ['show', 'create', 'store', 'index', 'confirmEmail'],
         ]);
 
         $this->middleware('guest', [
@@ -70,10 +70,11 @@ class UsersController extends Controller
             'password' => bcrypt($request->get('password')),
         ]);
 
-        \Auth::login($user);
-        session()->flash('success', '欢迎，您将在这里开启一段新的旅程~');
+        $this->sendEmailConfirmationTo($user);
 
-        return redirect()->route('users.show', [$user]);
+        session()->flash('success', '验证邮件已发送到你的注册邮箱上，请注意查收。');
+
+        return redirect('/');
     }
 
     public function edit(User $user)
@@ -111,5 +112,36 @@ class UsersController extends Controller
         session()->flash('success', '成功删除用户!');
 
         return back();
+    }
+
+    /**
+     * @param $user
+     */
+    protected function sendEmailConfirmationTo($user): void
+    {
+        $view = 'emails.confirm';
+        $data = compact('user');
+        $from = 'wwhu@163.com';
+        $name = 'wwhu668';
+        $to = $user->email;
+        $subject = "感谢注册 Sample 应用！请确认你的邮箱。";
+
+        \Mail::send($view, $data, function ($message) use ($from, $name, $to, $subject) {
+            $message->from($from, $name)->to($to)->subject($subject);
+        });
+    }
+
+    public function confirmEmail($token)
+    {
+        $user = User::where('activation_token', $token)->firstOrFail();
+
+        $user->activated = true;
+        $user->activation_token = null;
+        $user->save();
+
+        \Auth::login($user);
+        session()->flash('success', '恭喜你，激活成功！');
+
+        return redirect()->route('users.show', [$user]);
     }
 }

@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use function foo\func;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+
 
 
 /**
@@ -17,7 +19,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property \Carbon\Carbon|null $created_at
  * @property \Carbon\Carbon|null $updated_at
  * @property int $is_admin
+ * @property string|null $activation_token
+ * @property int $activated
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection|\Illuminate\Notifications\DatabaseNotification[] $notifications
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\User whereActivated($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\User whereActivationToken($value)
  * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\User whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\User whereEmail($value)
  * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\User whereId($value)
@@ -49,6 +55,15 @@ class User extends Authenticatable
     protected $hidden = [
         'password', 'remember_token',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($user) {
+            $user->activation_token = str_random(30);
+        });
+    }
 
     public function gravatar($size = 100)
     {
